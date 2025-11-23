@@ -17,9 +17,10 @@ import (
 type MonitorType string
 
 const (
-	CPUMonitorType    = "CPU"
-	DiskMonitorType   = "Disk"
-	MemoryMonitorType = "Memory"
+	CPUMonitorType      = "CPU"
+	DiskMonitorType     = "Disk"
+	MemoryMonitorType   = "Memory"
+	MLModelMonitorType  = "MLModel"
 
 	DefaultSamplingInterval = 1 * time.Minute
 )
