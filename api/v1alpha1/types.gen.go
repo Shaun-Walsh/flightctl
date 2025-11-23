@@ -1653,6 +1653,24 @@ type ListMeta struct {
 	RemainingItemCount *int64 `json:"remainingItemCount,omitempty"`
 }
 
+// MLModelResourceMonitorSpec defines model for MLModelResourceMonitorSpec.
+type MLModelResourceMonitorSpec struct {
+	// AlertRules Array of alert rules. Only one alert per severity is allowed.
+	AlertRules []ResourceAlertRule `json:"alertRules"`
+
+	// ModelName Name of the ML model being monitored.
+	ModelName *string `json:"modelName,omitempty"`
+
+	// MonitorType The type of resource to monitor.
+	MonitorType string `json:"monitorType"`
+
+	// SamplingInterval Duration between monitor samples. Format: positive integer followed by 's' for seconds, 'm' for minutes, 'h' for hours.
+	SamplingInterval string `json:"samplingInterval"`
+
+	// SidecarEndpoint HTTP endpoint of the ML monitoring sidecar (e.g., Evidently AI).
+	SidecarEndpoint *string `json:"sidecarEndpoint,omitempty"`
+}
+
 // MatchExpression defines model for MatchExpression.
 type MatchExpression struct {
 	// Key The label key that the selector applies to.
@@ -3760,6 +3778,34 @@ func (t *ResourceMonitor) MergeDiskResourceMonitorSpec(v DiskResourceMonitorSpec
 	return err
 }
 
+// AsMLModelResourceMonitorSpec returns the union data inside the ResourceMonitor as a MLModelResourceMonitorSpec
+func (t ResourceMonitor) AsMLModelResourceMonitorSpec() (MLModelResourceMonitorSpec, error) {
+	var body MLModelResourceMonitorSpec
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMLModelResourceMonitorSpec overwrites any union data inside the ResourceMonitor as the provided MLModelResourceMonitorSpec
+func (t *ResourceMonitor) FromMLModelResourceMonitorSpec(v MLModelResourceMonitorSpec) error {
+	v.MonitorType = "MLModel"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMLModelResourceMonitorSpec performs a merge with any union data inside the ResourceMonitor, using the provided MLModelResourceMonitorSpec
+func (t *ResourceMonitor) MergeMLModelResourceMonitorSpec(v MLModelResourceMonitorSpec) error {
+	v.MonitorType = "MLModel"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 func (t ResourceMonitor) Discriminator() (string, error) {
 	var discriminator struct {
 		Discriminator string `json:"monitorType"`
@@ -3778,6 +3824,8 @@ func (t ResourceMonitor) ValueByDiscriminator() (interface{}, error) {
 		return t.AsCpuResourceMonitorSpec()
 	case "Disk":
 		return t.AsDiskResourceMonitorSpec()
+	case "MLModel":
+		return t.AsMLModelResourceMonitorSpec()
 	case "Memory":
 		return t.AsMemoryResourceMonitorSpec()
 	default:

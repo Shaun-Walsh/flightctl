@@ -4178,12 +4178,14 @@ components:
         - $ref: '#/components/schemas/CpuResourceMonitorSpec'
         - $ref: '#/components/schemas/MemoryResourceMonitorSpec'
         - $ref: '#/components/schemas/DiskResourceMonitorSpec'
+        - $ref: '#/components/schemas/MLModelResourceMonitorSpec'
       discriminator:
         propertyName: monitorType
         mapping:
           CPU: '#/components/schemas/CpuResourceMonitorSpec'
           Memory: '#/components/schemas/MemoryResourceMonitorSpec'
           Disk: '#/components/schemas/DiskResourceMonitorSpec'
+          MLModel: '#/components/schemas/MLModelResourceMonitorSpec'
       required:
         - monitorType
     ResourceMonitorSpec:
@@ -4238,6 +4240,25 @@ components:
             path:
               type: string
               description: The directory path to monitor for disk usage.
+    MLModelResourceMonitorSpec:
+      allOf:
+        - $ref: '#/components/schemas/ResourceMonitorSpec'
+        - type: object
+          required: [ monitorType ]
+          properties:
+            monitorType:
+              type: string
+              description: The type of resource to monitor.
+        - type: object
+          description: Specification for monitoring ML model drift and performance.
+          properties:
+            sidecarEndpoint:
+              type: string
+              description: HTTP endpoint of the ML monitoring sidecar (e.g., Evidently AI).
+              default: "http://localhost:5001/metrics"
+            modelName:
+              type: string
+              description: Name of the ML model being monitored.
     ResourceAlertRule:
       type: object
       properties:
