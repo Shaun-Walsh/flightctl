@@ -1,0 +1,26 @@
+apiVersion: flightctl.io/v1alpha1
+kind: Device
+metadata:
+  name: edge-ml-device-001
+  labels:
+    model: recommendation-engine
+    deployment: edge
+spec:
+  resourceMonitors:
+    - monitorType: MLModel
+      sidecarEndpoint: "http://localhost:8085/metrics"
+      modelName: "recommendation-engine"
+      samplingInterval: "10m"
+      alertRules:
+        - severity: Info
+          percentage: 8
+          duration: "1h"
+          description: "Slight drift detected - monitor for trends"
+        - severity: Warning
+          percentage: 12
+          duration: "30m"
+          description: "Moderate drift - consider model refresh"
+        - severity: Critical
+          percentage: 20
+          duration: "15m"
+          description: "High drift - model retraining recommended"

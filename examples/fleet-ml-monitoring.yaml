@@ -1,0 +1,58 @@
+apiVersion: flightctl.io/v1alpha1
+kind: Fleet
+metadata:
+  name: ml-inference-fleet
+  labels:
+    environment: production
+    model-type: fraud-detection
+spec:
+  selector:
+    matchLabels:
+      fleet: ml-inference
+      region: us-east-1
+
+  template:
+    metadata:
+      labels:
+        fleet: ml-inference
+        model-version: v2.1
+
+    spec:
+      # ML Model Drift Monitoring
+      resourceMonitors:
+        # Primary fraud detection model
+        - monitorType: MLModel
+          sidecarEndpoint: "http://localhost:5001/metrics"
+          modelName: "fraud-detection-v2"
+          samplingInterval: "5m"
+          alertRules:
+            - severity: Warning
+              percentage: 15
+              duration: "10m"
+              description: "Fraud model drift above 15% for 10 minutes"
+            - severity: Critical
+              percentage: 25
+              duration: "5m"
+              description: "Fraud model drift above 25% - immediate attention required"
+
+        # CPU monitoring for inference workload
+        - monitorType: CPU
+          samplingInterval: "1m"
+          alertRules:
+            - severity: Warning
+              percentage: 80
+              duration: "15m"
+            - severity: Critical
+              percentage: 90
+              duration: "5m"
+
+        # Memory monitoring
+        - monitorType: Memory
+          samplingInterval: "1m"
+          alertRules:
+            - severity: Warning
+              percentage: 85
+              duration: "10m"
+            - severity: Critical
+              percentage: 95
+              duration: "5m"
