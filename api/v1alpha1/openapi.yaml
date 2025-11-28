@@ -4798,6 +4798,8 @@ components:
           $ref: "#/components/schemas/DeviceResourceStatusType"
         disk:
           $ref: "#/components/schemas/DeviceResourceStatusType"
+        mlmodel:
+          $ref: "#/components/schemas/DeviceResourceStatusType"
     DeviceResourceStatusType:
       type: string
       description: The types of resource statuses.

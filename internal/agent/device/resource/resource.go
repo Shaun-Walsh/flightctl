@@ -45,10 +45,11 @@ type Collector[T any] interface {
 }
 
 type ResourceManager struct {
-	cpuMonitor    Monitor[CPUUsage]
-	diskMonitor   Monitor[DiskUsage]
-	memoryMonitor Monitor[MemoryUsage]
-	log           *log.PrefixLogger
+	cpuMonitor      Monitor[CPUUsage]
+	diskMonitor     Monitor[DiskUsage]
+	memoryMonitor   Monitor[MemoryUsage]
+	mlModelMonitor  Monitor[MLModelUsage]
+	log             *log.PrefixLogger
 }
 
 // NewManager creates a new resource Manager.
@@ -56,10 +57,11 @@ func NewManager(
 	log *log.PrefixLogger,
 ) Manager {
 	return &ResourceManager{
-		cpuMonitor:    NewCPUMonitor(log),
-		diskMonitor:   NewDiskMonitor(log),
-		memoryMonitor: NewMemoryMonitor(log),
-		log:           log,
+		cpuMonitor:     NewCPUMonitor(log),
+		diskMonitor:    NewDiskMonitor(log),
+		memoryMonitor:  NewMemoryMonitor(log),
+		mlModelMonitor: NewMLModelMonitor(log),
+		log:            log,
 	}
 }
 
@@ -70,6 +72,7 @@ func (m *ResourceManager) Run(ctx context.Context) {
 	go m.diskMonitor.Run(ctx)
 	go m.cpuMonitor.Run(ctx)
 	go m.memoryMonitor.Run(ctx)
+	go m.mlModelMonitor.Run(ctx)
 
 	<-ctx.Done()
 }
@@ -87,6 +90,8 @@ func (m *ResourceManager) Update(monitor *v1alpha1.ResourceMonitor) (bool, error
 		return m.diskMonitor.Update(monitor)
 	case MemoryMonitorType:
 		return m.memoryMonitor.Update(monitor)
+	case MLModelMonitorType:
+		return m.mlModelMonitor.Update(monitor)
 	default:
 		return false, fmt.Errorf("unknown monitor type: %s", monitorType)
 	}
@@ -134,6 +139,19 @@ func (m *ResourceManager) ResetAlertDefaults() error {
 		m.log.Debug("Reset memory monitor alerts")
 	}
 
+	// mlmodel
+	mlModelMonitor, err := defaultMLModelResourceMonitor()
+	if err != nil {
+		errs = append(errs, err)
+	}
+	updated, err = m.mlModelMonitor.Update(mlModelMonitor)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	if updated {
+		m.log.Debug("Reset ML model monitor alerts")
+	}
+
 	if len(errs) > 0 {
 		return errors.Join(errs...)
 	}
@@ -171,6 +189,15 @@ func (m *ResourceManager) Status(ctx context.Context, status *v1alpha1.DeviceSta
 			alerts: alerts.MemoryUsage,
 			setStatusFn: func(resourceStatus v1alpha1.DeviceResourceStatusType) {
 				status.Resources.Memory = resourceStatus
+			},
+		},
+		MLModelMonitorType: {
+			alerts: alerts.MLModelUsage,
+			setStatusFn: func(resourceStatus v1alpha1.DeviceResourceStatusType) {
+				if status.Resources.Mlmodel == nil {
+					status.Resources.Mlmodel = new(v1alpha1.DeviceResourceStatusType)
+				}
+				*status.Resources.Mlmodel = resourceStatus
 			},
 		},
 	}
@@ -211,16 +238,18 @@ func (m *ResourceManager) Status(ctx context.Context, status *v1alpha1.DeviceSta
 
 func (m *ResourceManager) Alerts() *Alerts {
 	return &Alerts{
-		DiskUsage:   m.diskMonitor.Alerts(),
-		CPUUsage:    m.cpuMonitor.Alerts(),
-		MemoryUsage: m.memoryMonitor.Alerts(),
+		DiskUsage:    m.diskMonitor.Alerts(),
+		CPUUsage:     m.cpuMonitor.Alerts(),
+		MemoryUsage:  m.memoryMonitor.Alerts(),
+		MLModelUsage: m.mlModelMonitor.Alerts(),
 	}
 }
 
 type Alerts struct {
-	DiskUsage   []v1alpha1.ResourceAlertRule
-	CPUUsage    []v1alpha1.ResourceAlertRule
-	MemoryUsage []v1alpha1.ResourceAlertRule
+	DiskUsage     []v1alpha1.ResourceAlertRule
+	CPUUsage      []v1alpha1.ResourceAlertRule
+	MemoryUsage   []v1alpha1.ResourceAlertRule
+	MLModelUsage  []v1alpha1.ResourceAlertRule
 }
 
 type Alert struct {
@@ -409,5 +438,29 @@ func defaultMemoryResourceMonitor() (*v1alpha1.ResourceMonitor, error) {
 	}
 	rm := &v1alpha1.ResourceMonitor{}
 	err := rm.FromMemoryResourceMonitorSpec(spec)
+	return rm, err
+}
+
+func defaultMLModelResourceMonitor() (*v1alpha1.ResourceMonitor, error) {
+	spec := v1alpha1.MLModelResourceMonitorSpec{
+		SamplingInterval: DefaultSamplingInterval.String(),
+		MonitorType:      MLModelMonitorType,
+		AlertRules: []v1alpha1.ResourceAlertRule{
+			{
+				Severity:    v1alpha1.ResourceAlertSeverityTypeCritical,
+				Percentage:  90,
+				Duration:    "10m",
+				Description: "", // use generated description
+			},
+			{
+				Severity:    v1alpha1.ResourceAlertSeverityTypeWarning,
+				Percentage:  80,
+				Duration:    "30m",
+				Description: "", // use generated description
+			},
+		},
+	}
+	rm := &v1alpha1.ResourceMonitor{}
+	err := rm.FromMLModelResourceMonitorSpec(spec)
 	return rm, err
 }

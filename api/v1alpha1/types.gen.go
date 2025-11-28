@@ -813,6 +813,9 @@ type DeviceResourceStatus struct {
 
 	// Memory The types of resource statuses.
 	Memory DeviceResourceStatusType `json:"memory"`
+
+	// Mlmodel The types of resource statuses.
+	Mlmodel *DeviceResourceStatusType `json:"mlmodel,omitempty"`
 }
 
 // DeviceResourceStatusType The types of resource statuses.

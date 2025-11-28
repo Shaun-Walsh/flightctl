@@ -36,19 +36,13 @@ type MLModelMonitor struct {
 
 func NewMLModelMonitor(
 	log *log.PrefixLogger,
-	spec *v1alpha1.MLModelResourceMonitorSpec,
 ) *MLModelMonitor {
-	endpoint := DefaultMLModelSidecarEndpoint
-	if spec.SidecarEndpoint != nil && *spec.SidecarEndpoint != "" {
-		endpoint = *spec.SidecarEndpoint
-	}
-
 	return &MLModelMonitor{
 		alerts:           make(map[v1alpha1.ResourceAlertSeverityType]*Alert),
 		updateIntervalCh: make(chan time.Duration, 1),
 		samplingInterval: DefaultSamplingInterval,
-		endpoint:         endpoint,
-		collector:        newMLModelCollector(endpoint, log),
+		endpoint:         DefaultMLModelSidecarEndpoint,
+		collector:        newMLModelCollector(DefaultMLModelSidecarEndpoint, log),
 		log:              log,
 	}
 }
