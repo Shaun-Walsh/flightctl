@@ -1,0 +1,101 @@
+apiVersion: flightctl.io/v1beta1
+kind: Fleet
+metadata:
+  name: mlops
+spec:
+  selector:
+    matchLabels:
+      project: mlops
+  template:
+    metadata:
+      labels:
+        fleet: mlops
+    spec:
+      resources:
+        monitoring:
+          - type: MLModel
+            sidecarEndpoint: http://localhost:5001/metrics
+            samplingInterval: 30s
+            alertRules:
+              - type: Warning
+                percentage: 30
+              - type: Critical
+                percentage: 70
+
+      applications:
+        - name: mlops-gpu-stack
+          appType: compose
+          inline:
+            - path: podman-compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  drift-monitor:
+                    image: quay.io/redhat-et/drift-sidecar:latest
+                    ports:
+                      - "5001:5001"
+                    networks:
+                      - mlops-network
+                    restart: always
+                    healthcheck:
+                      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+                      interval: 30s
+                      timeout: 10s
+                      retries: 3
+
+                  model-init:
+                    image: quay.io/redhat-et/modelcar-llama-3.2-1b:v1.0.0
+                    command: ["echo", "model image pulled"]
+
+                  vllm-server:
+                    image: quay.io/redhat-et/vllm-server:latest
+                    volumes:
+                      - model-image:/models:ro
+                    ports:
+                      - "8000:8000"
+                    devices:
+                      - nvidia.com/gpu=all
+                    shm_size: 2g
+                    security_opt:
+                      - label=disable
+                    environment:
+                      - LD_LIBRARY_PATH=/usr/lib64
+                    command: ["--model", "/models/models", "--served-model-name", "Llama-3.2-1B-Instruct"]
+                    restart: always
+                    networks:
+                      - mlops-network
+                    healthcheck:
+                      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+                      interval: 30s
+                      timeout: 10s
+                      retries: 3
+                      start_period: 90s
+
+                  openwebui:
+                    image: quay.io/redhat-et/openwebui:latest
+                    depends_on:
+                      - vllm-server
+                    volumes:
+                      - openwebui-data:/app/backend/data:Z
+                    network_mode: host
+                    environment:
+                      - OPENAI_API_BASE_URL=http://localhost:8000/v1
+                    restart: always
+                    healthcheck:
+                      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+                      interval: 30s
+                      timeout: 10s
+                      retries: 3
+                      start_period: 20s
+
+                volumes:
+                  model-image:
+                    driver: image
+                    driver_opts:
+                      image: quay.io/redhat-et/modelcar-llama-3.2-1b:v1.0.0
+                  openwebui-data:
+                    driver: local
+
+                networks:
+                  mlops-network:
+                    driver: bridge
