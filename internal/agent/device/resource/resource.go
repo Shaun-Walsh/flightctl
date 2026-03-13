@@ -20,7 +20,7 @@ const (
 	CPUMonitorType      = "CPU"
 	DiskMonitorType     = "Disk"
 	MemoryMonitorType   = "Memory"
-	MLModelMonitorType  = "MLModel"
+	MLModelMonitorType  = "MLModel" // Modified by Shaun Walsh
 
 	DefaultSamplingInterval = 1 * time.Minute
 )
@@ -441,6 +441,7 @@ func defaultMemoryResourceMonitor() (*v1alpha1.ResourceMonitor, error) {
 	return rm, err
 }
 
+// Modified by Shaun Walsh
 func defaultMLModelResourceMonitor() (*v1alpha1.ResourceMonitor, error) {
 	spec := v1alpha1.MLModelResourceMonitorSpec{
 		SamplingInterval: DefaultSamplingInterval.String(),
@@ -464,3 +465,4 @@ func defaultMLModelResourceMonitor() (*v1alpha1.ResourceMonitor, error) {
 	err := rm.FromMLModelResourceMonitorSpec(spec)
 	return rm, err
 }
+// End of changes by Shaun Walsh

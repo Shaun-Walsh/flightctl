@@ -4178,14 +4178,14 @@ components:
         - $ref: '#/components/schemas/CpuResourceMonitorSpec'
         - $ref: '#/components/schemas/MemoryResourceMonitorSpec'
         - $ref: '#/components/schemas/DiskResourceMonitorSpec'
-        - $ref: '#/components/schemas/MLModelResourceMonitorSpec'
+        - $ref: '#/components/schemas/MLModelResourceMonitorSpec' # Modified by Shaun Walsh
       discriminator:
         propertyName: monitorType
         mapping:
           CPU: '#/components/schemas/CpuResourceMonitorSpec'
           Memory: '#/components/schemas/MemoryResourceMonitorSpec'
           Disk: '#/components/schemas/DiskResourceMonitorSpec'
-          MLModel: '#/components/schemas/MLModelResourceMonitorSpec'
+          MLModel: '#/components/schemas/MLModelResourceMonitorSpec' # Modified by Shaun Walsh
       required:
         - monitorType
     ResourceMonitorSpec:
@@ -4240,6 +4240,7 @@ components:
             path:
               type: string
               description: The directory path to monitor for disk usage.
+    # Modified by Shaun Walsh
     MLModelResourceMonitorSpec:
       allOf:
         - $ref: '#/components/schemas/ResourceMonitorSpec'
@@ -4259,6 +4260,7 @@ components:
             modelName:
               type: string
               description: Name of the ML model being monitored.
+    # End of changes by Shaun Walsh
     ResourceAlertRule:
       type: object
       properties:

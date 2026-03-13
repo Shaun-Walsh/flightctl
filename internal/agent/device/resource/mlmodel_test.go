@@ -1,3 +1,4 @@
+// Created by Shaun Walsh
 package resource
 
 import (
