@@ -1,0 +1,40 @@
+# Created by Shaun Walsh
+# llama.cpp inference server - CPU-only, OpenAI-compatible API with Prometheus metrics
+FROM registry.access.redhat.com/ubi9/ubi:9.4 as builder
+
+USER root
+
+# Install build dependencies
+RUN dnf -y install gcc gcc-c++ make cmake git && \
+    dnf -y clean all
+
+# Clone and build llama.cpp
+RUN git clone https://github.com/ggml-org/llama.cpp.git /build/llama.cpp && \
+    cd /build/llama.cpp && \
+    cmake -B build -DLLAMA_CURL=OFF && \
+    cmake --build build --target llama-server -j$(nproc)
+
+# Final image
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.4
+
+# Copy the server binary
+COPY --from=builder /build/llama.cpp/build/bin/llama-server /usr/local/bin/llama-server
+
+# Model files provided via volume mount from modelcar
+VOLUME /models
+
+USER 1001
+
+# Expose OpenAI-compatible API
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 --start-period=60s \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Start inference server
+# --metrics exposes Prometheus metrics at /metrics
+CMD ["llama-server", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--model", "/models/model.safetensors", \
+     "--metrics"]
