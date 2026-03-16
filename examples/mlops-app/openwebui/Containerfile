@@ -1,0 +1,20 @@
+# Created by Shaun Walsh
+# OpenWebUI - Chat frontend configured for llama.cpp inference server
+FROM ghcr.io/open-webui/open-webui:main
+
+LABEL name="openwebui" \
+      description="OpenWebUI chat interface configured for llama.cpp backend" \
+      maintainer="Shaun Walsh"
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Default environment variables for llama.cpp connection
+ENV OPENAI_API_BASE_URL=http://inference-server:8000/v1 \
+    OPENAI_API_KEY="" \
+    WEBUI_NAME="MLOps Edge AI Chat" \
+    ENABLE_SIGNUP=true
+
+VOLUME /app/backend/data
