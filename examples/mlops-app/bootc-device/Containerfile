@@ -2,15 +2,22 @@
 # CentOS Stream 9 bootc image for FlightCtl-managed edge devices running MLOps workloads
 FROM quay.io/centos-bootc/centos-bootc:stream9
 
-# Install FlightCtl agent
-RUN dnf -y config-manager --add-repo https://rpm.flightctl.io/flightctl-epel.repo && \
-    dnf -y install flightctl-agent && \
-    dnf -y clean all && \
+# Install FlightCtl agent built from fork (includes ML model monitoring)
+# The upstream RPM from rpm.flightctl.io does not include our ML model monitor changes
+COPY flightctl-agent /usr/bin/flightctl-agent
+COPY flightctl-agent.service /etc/systemd/system/flightctl-agent.service
+RUN chmod +x /usr/bin/flightctl-agent && \
     systemctl enable flightctl-agent.service
 
-# Enable podman-compose application support for MLOps container stack
+# cloud-init for EC2 SSH key injection and instance metadata
+RUN dnf -y install cloud-init && \
+    dnf -y clean all && \
+    systemctl enable cloud-init.service cloud-init-local.service \
+    cloud-config.service cloud-final.service
+
+# Enable podman and podman-compose for MLOps container stack
 RUN dnf -y install epel-release && \
-    dnf -y install podman-compose && \
+    dnf -y install podman podman-compose && \
     dnf -y clean all && \
     systemctl enable podman.service
 
