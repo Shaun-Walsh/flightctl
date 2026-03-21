@@ -1,0 +1,107 @@
+# Created by Shaun Walsh
+apiVersion: flightctl.io/v1beta1
+kind: Fleet
+metadata:
+  name: mlops
+spec:
+  selector:
+    matchLabels:
+      project: mlops
+  template:
+    metadata:
+      labels:
+        fleet: mlops
+    spec:
+      resources:
+        - monitorType: MLModel
+          sidecarEndpoint: http://localhost:5001/metrics
+          samplingInterval: 30s
+          alertRules:
+            - severity: Warning
+              percentage: 30
+              duration: 60s
+              description: "ML model drift score exceeds 30%"
+            - severity: Critical
+              percentage: 70
+              duration: 60s
+              description: "ML model drift score exceeds 70%"
+
+      applications:
+        - name: drift-monitor
+          appType: compose
+          inline:
+            - path: podman-compose.yaml
+              content: |
+                version: "3.8"
+                services:
+                  drift-monitor:
+                    image: quay.io/rh-ee-shwalsh/hdip-drift-sidecar:latest
+                    ports:
+                      - "5001:5001"
+                    restart: always
+        - name: mlops-app
+          appType: quadlet
+          inline:
+            - path: mlops.network
+              content: |
+                [Network]
+            - path: model-storage.volume
+              content: |
+                [Volume]
+            - path: model-car.container
+              content: |
+                [Unit]
+                Description=Model Car Init Container
+                Before=inference-server.service
+
+                [Container]
+                Image=quay.io/rh-ee-shwalsh/hdip-llama-model:latest
+                Volume=model-storage.volume:/target:Z
+                User=0
+                Exec=sh -c "cp -r /models/* /target/"
+
+                [Service]
+                Type=oneshot
+                RemainAfterExit=yes
+
+                [Install]
+                WantedBy=multi-user.target default.target
+            - path: inference-server.container
+              content: |
+                [Unit]
+                Description=Llama.cpp Inference Server
+                After=model-car.service
+
+                [Container]
+                Image=quay.io/rh-ee-shwalsh/hdip-inference-server:latest
+                Volume=model-storage.volume:/models:ro,Z
+                Network=mlops.network
+                NetworkAlias=inference-server
+                PublishPort=8000:8000
+
+                [Service]
+                Restart=on-failure
+                RestartSec=10
+
+                [Install]
+                WantedBy=multi-user.target default.target
+            - path: openwebui.container
+              content: |
+                [Unit]
+                Description=OpenWebUI Chat Frontend
+                After=inference-server.service
+
+                [Container]
+                Image=quay.io/rh-ee-shwalsh/hdip-openwebui:latest
+                Network=mlops.network
+                PublishPort=8080:8080
+                Environment=OPENAI_API_BASE_URL=http://host.containers.internal:8000/v1
+                Environment=OPENAI_API_KEY=
+                Environment=WEBUI_NAME=MLOps Edge AI Chat
+
+                [Service]
+                Restart=on-failure
+                RestartSec=10
+
+                [Install]
+                WantedBy=multi-user.target default.target

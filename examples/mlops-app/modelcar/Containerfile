@@ -1,24 +1,13 @@
 # Created by Shaun Walsh
-# Stage 1: Download model
-FROM registry.access.redhat.com/ubi9/python-311:latest as base
+# Downloads pre-quantized GGUF model for llama.cpp inference
+FROM registry.access.redhat.com/ubi9/python-311:latest as downloader
 
 USER root
-
-# Install huggingface-hub
 RUN pip install huggingface-hub
-
-# Copy the model download script
 COPY model-downloader.py .
+RUN python model-downloader.py
 
-# Download the model (HF_TOKEN via build secret or env var)
-RUN --mount=type=secret,id=HF_TOKEN,required=false \
-    if [ -f /run/secrets/HF_TOKEN ]; then export HF_TOKEN=$(cat /run/secrets/HF_TOKEN); fi && \
-    python model-downloader.py
-
-# Stage 2: Final minimal image with model files
+# Final minimal image with model file only
 FROM registry.access.redhat.com/ubi9/ubi-micro:9.4
-
-# Copy only the model files from the build stage
-COPY --from=base /models /models
-
+COPY --from=downloader /models /models
 USER 1001

@@ -1,0 +1,16 @@
+[Unit]
+Description=Model Car Init Container
+Before=inference-server.service
+
+[Container]
+Image=quay.io/rh-ee-shwalsh/hdip-llama-model:latest
+Volume=model-storage.volume:/target:Z
+User=0
+Exec=sh -c "cp -r /models/* /target/"
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target default.target

@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenWebUI Chat Frontend
+After=inference-server.service
+
+[Container]
+Image=quay.io/rh-ee-shwalsh/hdip-openwebui:latest
+Network=mlops.network
+PublishPort=8080:8080
+Environment=OPENAI_API_BASE_URL=http://inference-server:8000/v1
+Environment=OPENAI_API_KEY=
+Environment=WEBUI_NAME=MLOps Edge AI Chat
+
+[Service]
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target default.target

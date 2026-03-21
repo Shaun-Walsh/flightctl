@@ -1,0 +1,17 @@
+[Unit]
+Description=Llama.cpp Inference Server
+After=model-car.service
+
+[Container]
+Image=quay.io/rh-ee-shwalsh/hdip-inference-server:latest
+Volume=model-storage.volume:/models:ro,Z
+Network=mlops.network
+NetworkAlias=inference-server
+PublishPort=8000:8000
+
+[Service]
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target default.target
