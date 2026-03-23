@@ -36,6 +36,13 @@ Flight Control automatically generates alerts for the following conditions:
   - `DeviceDiskWarning`: Disk usage exceeds warning threshold
   - `DeviceDiskNormal`: Resolves disk alerts when usage returns to normal
 
+<!-- Added by Shaun Walsh - MLModel drift alerts -->
+- **ML Model Alerts**:
+  - `DeviceMLModelCritical`: ML model drift score exceeds critical threshold
+  - `DeviceMLModelWarning`: ML model drift score exceeds warning threshold
+  - `DeviceMLModelNormal`: Resolves ML model alerts when drift returns to normal
+<!-- End Shaun Walsh -->
+
 ### Application Alerts
 
 - **Application Status**:

@@ -1,4 +1,5 @@
 {
+  "created_by": "Shaun Walsh",
   "description": "Reference baseline for drift detection — healthy llama.cpp performance on 2-vCPU EC2 (Llama-3.2-1B-Instruct Q4_K_M)",
   "samples": [
     {"gen_throughput": 7.42, "prompt_throughput": 21.12},

@@ -247,6 +247,11 @@ func getListEventsParams(newerThan string) api.ListEventsParams {
 		api.EventReasonDeviceDiskCritical,
 		api.EventReasonDeviceDiskNormal,
 		api.EventReasonDeviceDiskWarning,
+		// Added by Shaun Walsh - MLModel drift events
+		api.EventReasonDeviceMLModelCritical,
+		api.EventReasonDeviceMLModelNormal,
+		api.EventReasonDeviceMLModelWarning,
+		// End Shaun Walsh
 		api.EventReasonResourceDeleted,
 		api.EventReasonDeviceDecommissioned,
 	}
@@ -274,6 +279,7 @@ var (
 	cpuGroup       = []string{string(api.EventReasonDeviceCPUCritical), string(api.EventReasonDeviceCPUWarning)}
 	memoryGroup    = []string{string(api.EventReasonDeviceMemoryCritical), string(api.EventReasonDeviceMemoryWarning)}
 	diskGroup      = []string{string(api.EventReasonDeviceDiskCritical), string(api.EventReasonDeviceDiskWarning)}
+	mlmodelGroup   = []string{string(api.EventReasonDeviceMLModelCritical), string(api.EventReasonDeviceMLModelWarning)} // Added by Shaun Walsh
 )
 
 func (c *CheckpointContext) processEvent(event api.Event, orgID uuid.UUID) {
@@ -308,6 +314,14 @@ func (c *CheckpointContext) processEvent(event api.Event, orgID uuid.UUID) {
 		c.setAlert(event, string(api.EventReasonDeviceDiskWarning), diskGroup, orgID)
 	case api.EventReasonDeviceDiskNormal:
 		c.clearAlertGroup(event, diskGroup, orgID)
+	// Added by Shaun Walsh - MLModel drift alert processing
+	case api.EventReasonDeviceMLModelCritical:
+		c.setAlert(event, string(api.EventReasonDeviceMLModelCritical), mlmodelGroup, orgID)
+	case api.EventReasonDeviceMLModelWarning:
+		c.setAlert(event, string(api.EventReasonDeviceMLModelWarning), mlmodelGroup, orgID)
+	case api.EventReasonDeviceMLModelNormal:
+		c.clearAlertGroup(event, mlmodelGroup, orgID)
+	// End Shaun Walsh
 	// Device connection status
 	case api.EventReasonDeviceDisconnected:
 		c.setAlert(event, string(api.EventReasonDeviceDisconnected), nil, orgID)

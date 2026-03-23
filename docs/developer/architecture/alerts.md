@@ -108,6 +108,11 @@ graph LR
 | `DeviceDiskCritical` | Disk critical alert | Disk |
 | `DeviceDiskWarning` | Disk warning alert | Disk |
 | `DeviceDiskNormal` | Resolves disk alerts | Disk |
+<!-- Added by Shaun Walsh - MLModel drift event types -->
+| `DeviceMLModelCritical` | ML model drift critical alert | MLModel |
+| `DeviceMLModelWarning` | ML model drift warning alert | MLModel |
+| `DeviceMLModelNormal` | Resolves ML model alerts | MLModel |
+<!-- End Shaun Walsh -->
 | `ResourceDeleted` | Resolves all alerts for resource | - |
 | `DeviceDecommissioned` | Resolves all alerts for device | - |
 

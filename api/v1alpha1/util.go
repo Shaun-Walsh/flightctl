@@ -451,6 +451,10 @@ var warningReasons = map[EventReason]struct{}{
 	EventReasonDeviceMemoryWarning:             {},
 	EventReasonDeviceDiskCritical:              {},
 	EventReasonDeviceDiskWarning:               {},
+	// Added by Shaun Walsh - MLModel drift alert events
+	EventReasonDeviceMLModelCritical:           {},
+	EventReasonDeviceMLModelWarning:            {},
+	// End Shaun Walsh
 	EventReasonDeviceDisconnected:              {},
 	EventReasonDeviceConflictPaused:            {},
 	EventReasonDeviceSpecInvalid:               {},

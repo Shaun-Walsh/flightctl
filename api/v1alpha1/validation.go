@@ -257,12 +257,14 @@ func (r ResourceMonitor) Validate() []error {
 			allErrs = append(allErrs, fmt.Errorf("%w: Memory monitors cannot have a path field", ErrInvalidMemoryMonitorField))
 		}
 		allErrs = append(allErrs, validateAlertRules(spec.AlertRules, spec.SamplingInterval)...)
+	// Added by Shaun Walsh - MLModel resource monitor validation
 	case "MLModel":
 		spec, err := r.AsMLModelResourceMonitorSpec()
 		if err != nil {
 			allErrs = append(allErrs, err)
 		}
 		allErrs = append(allErrs, validateAlertRules(spec.AlertRules, spec.SamplingInterval)...)
+	// End Shaun Walsh
 	default:
 		allErrs = append(allErrs, fmt.Errorf("unknown monitor type valid types are CPU, Disk, Memory and MLModel: %s", monitorType))
 	}

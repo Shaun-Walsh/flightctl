@@ -31,6 +31,11 @@ const (
 	DiskIsCritical                    = "Disk utilization has reached a critical level."
 	DiskIsWarning                     = "Disk utilization has reached a warning level."
 	DiskIsNormal                      = "Disk utilization has returned to normal."
+	// Added by Shaun Walsh - MLModel drift status messages
+	MLModelIsCritical                 = "ML model drift has reached a critical level."
+	MLModelIsWarning                  = "ML model drift has reached a warning level."
+	MLModelIsNormal                   = "ML model drift has returned to normal."
+	// End Shaun Walsh
 )
 
 type DeviceSuccessEvent func(ctx context.Context, created bool, resourceKind api.ResourceKind, resourceName string, updateDetails *api.ResourceUpdatedDetailsUpdatedFields, log logrus.FieldLogger) *api.Event
@@ -64,6 +69,14 @@ var (
 		api.DeviceResourceStatusWarning:  ResourceUpdate{Reason: api.EventReasonDeviceDiskWarning, Details: DiskIsWarning},
 		api.DeviceResourceStatusHealthy:  ResourceUpdate{Reason: api.EventReasonDeviceDiskNormal, Details: DiskIsNormal},
 	}
+
+	// Added by Shaun Walsh - MLModel drift status map
+	mlmodelStatus = statusType{
+		api.DeviceResourceStatusCritical: ResourceUpdate{Reason: api.EventReasonDeviceMLModelCritical, Details: MLModelIsCritical},
+		api.DeviceResourceStatusWarning:  ResourceUpdate{Reason: api.EventReasonDeviceMLModelWarning, Details: MLModelIsWarning},
+		api.DeviceResourceStatusHealthy:  ResourceUpdate{Reason: api.EventReasonDeviceMLModelNormal, Details: MLModelIsNormal},
+	}
+	// End Shaun Walsh
 )
 
 func UpdateServiceSideStatus(ctx context.Context, orgId uuid.UUID, device *api.Device, st store.Store, log logrus.FieldLogger) bool {
@@ -109,6 +122,20 @@ func resourcesDisk(disk api.DeviceResourceStatusType, resourceErrors *[]string, 
 	}
 }
 
+// Added by Shaun Walsh - MLModel drift resource status check
+func resourcesMLModel(mlmodel *api.DeviceResourceStatusType, resourceErrors *[]string, resourceDegradations *[]string) {
+	if mlmodel == nil {
+		return
+	}
+	switch *mlmodel {
+	case api.DeviceResourceStatusCritical:
+		*resourceErrors = append(*resourceErrors, MLModelIsCritical)
+	case api.DeviceResourceStatusWarning:
+		*resourceDegradations = append(*resourceDegradations, MLModelIsWarning)
+	}
+}
+// End Shaun Walsh
+
 func updateServerSideDeviceStatus(device *api.Device) bool {
 	lastDeviceStatus := device.Status.Summary.Status
 
@@ -146,6 +173,7 @@ func updateServerSideDeviceStatus(device *api.Device) bool {
 	resourcesCpu(device.Status.Resources.Cpu, &resourceErrors, &resourceDegradations)
 	resourcesMemory(device.Status.Resources.Memory, &resourceErrors, &resourceDegradations)
 	resourcesDisk(device.Status.Resources.Disk, &resourceErrors, &resourceDegradations)
+	resourcesMLModel(device.Status.Resources.Mlmodel, &resourceErrors, &resourceDegradations) // Added by Shaun Walsh
 
 	switch {
 	case len(resourceErrors) > 0:
@@ -418,6 +446,17 @@ func ComputeDeviceStatusChanges(ctx context.Context, oldDevice, newDevice *api.D
 	for _, check := range resourceChecks {
 		checkResourceStatus(oldDevice, newDevice, check.statusMap, check.getter, &resourceUpdates)
 	}
+
+	// Added by Shaun Walsh - MLModel is a pointer field (optional resource monitor)
+	if newDevice.Status.Resources.Mlmodel != nil {
+		checkResourceStatus(oldDevice, newDevice, mlmodelStatus, func(d *api.Device) api.DeviceResourceStatusType {
+			if d.Status.Resources.Mlmodel != nil {
+				return *d.Status.Resources.Mlmodel
+			}
+			return api.DeviceResourceStatusUnknown
+		}, &resourceUpdates)
+	}
+	// End Shaun Walsh
 
 	return resourceUpdates
 }

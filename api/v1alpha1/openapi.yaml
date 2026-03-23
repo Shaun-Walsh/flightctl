@@ -5742,6 +5742,11 @@ components:
             - DeviceDiskCritical
             - DeviceDiskWarning
             - DeviceDiskNormal
+            # Added by Shaun Walsh - MLModel drift event types
+            - DeviceMLModelCritical
+            - DeviceMLModelWarning
+            - DeviceMLModelNormal
+            # End Shaun Walsh
             - DeviceApplicationError
             - DeviceApplicationDegraded
             - DeviceApplicationHealthy
