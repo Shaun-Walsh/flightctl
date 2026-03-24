@@ -1,0 +1,22 @@
+# Created by Shaun Walsh
+name: ML Model Retrain Pipeline
+
+on:
+  repository_dispatch:
+    types: [ml-drift-detected]
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log drift alert
+        run: |
+          echo "ML Model drift detected - triggering retraining pipeline"
+          echo "Event payload:"
+          echo '${{ toJson(github.event.client_payload) }}'
+
+      - name: Simulate retraining
+        run: |
+          echo "Connecting to RHOAI..."
+          sleep 5
+          echo "Retraining pipeline triggered successfully"
