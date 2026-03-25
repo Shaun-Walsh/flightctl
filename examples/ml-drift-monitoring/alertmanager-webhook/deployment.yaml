@@ -1,0 +1,50 @@
+# Created by Shaun Walsh
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-webhook-token
+  namespace: flightctl-internal
+type: Opaque
+stringData:
+  GITHUB_TOKEN: ""  # Set your GitHub PAT here at deploy time
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager-github-bridge
+  namespace: flightctl-internal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager-github-bridge
+  template:
+    metadata:
+      labels:
+        app: alertmanager-github-bridge
+    spec:
+      containers:
+        - name: bridge
+          image: quay.io/rh-ee-shwalsh/alertmanager-github-bridge:latest
+          ports:
+            - containerPort: 9095
+          env:
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: github-webhook-token
+                  key: GITHUB_TOKEN
+            - name: GITHUB_REPO
+              value: "Shaun-Walsh/flightctl"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-github-bridge
+  namespace: flightctl-internal
+spec:
+  selector:
+    app: alertmanager-github-bridge
+  ports:
+    - port: 9095
+      targetPort: 9095
